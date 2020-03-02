@@ -1,0 +1,9 @@
+{
+  "name": "halogen-conway",
+  "version": "0.1.0",
+  "description": "Conway's Game of Life implemented in PureScript/Halogen.",
+  "main": "./src/Main.purs",
+  "author": "kotonoha6502",
+  "license": "MIT",
+  "private": true
+}
