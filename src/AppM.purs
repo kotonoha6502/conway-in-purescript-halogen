@@ -27,4 +27,3 @@ derive newtype instance monadAffAppM :: MonadAff AppM
 
 instance monadAskAppM :: TypeEquals e Env => MonadAsk e AppM where
   ask = AppM $ asks from
-

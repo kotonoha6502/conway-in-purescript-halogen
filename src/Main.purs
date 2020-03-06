@@ -4,13 +4,33 @@ import Prelude
 
 import Conway.AppM (runAppM)
 import Conway.Env (Env)
-import Conway.Page as App
+import Conway.Page.Conway as Conway
+import Data.Const (Const)
+import Data.Symbol (SProxy(..))
 import Effect (Effect)
-import Effect.Aff (Aff)
+import Effect.Class (class MonadEffect)
 import Halogen as H
 import Halogen.Aff as HA
-import Halogen.VDom.Driver (runUI)
 import Halogen.HTML as HH
+import Halogen.HTML.Properties as HP
+import Halogen.VDom.Driver (runUI)
+
+type AppState = Unit
+type AppQuery = Const Void
+type AppInput = Unit
+type AppMessage = Void
+type AppAction = Unit
+
+app :: forall m. MonadEffect m => H.Component HH.HTML AppQuery AppInput AppMessage m
+app = H.mkComponent
+  { initialState: const unit
+  , render
+  , eval: H.mkEval $ H.defaultEval
+  }
+  where
+    render _ =
+      HH.div [ HP.id_ "app" ]
+             [ HH.slot (SProxy :: _ "view" ) unit Conway.component unit absurd ]
 
 main :: Effect Unit
 main = HA.runHalogenAff do
@@ -20,8 +40,8 @@ main = HA.runHalogenAff do
     env = { delta: 1000
           , pause: true }
 
-    app :: H.Component HH.HTML App.Query App.Input App.Message Aff
-    app = H.hoist (runAppM env) App.component
+    rootComponent = H.hoist (runAppM env) app
 
-  halogenIO <- runUI app unit body
+  halogenIO <- runUI rootComponent unit body
+
   pure unit
