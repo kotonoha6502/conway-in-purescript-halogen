@@ -10,11 +10,11 @@ import Prelude
 import CSS (backgroundColor, color, fontSize, height, px, rgb, width)
 import CSS.Common (middle)
 import CSS.VerticalAlign (verticalAlign)
-import Data.Array (length, (!!), (..))
+import Conway.Data.Grid (Grid, index)
+import Data.Array ((..))
 import Data.Const (Const)
-import Data.Maybe (Maybe(..), fromMaybe)
-import Effect.Class (class MonadEffect, liftEffect)
-import Effect.Console (log)
+import Data.Maybe (Maybe(..))
+import Effect.Class (class MonadEffect)
 import Halogen as H
 import Halogen.HTML (ClassName(..))
 import Halogen.HTML as HH
@@ -24,11 +24,17 @@ import Halogen.HTML.Properties as HP
 import Halogen.Themes.Bootstrap3 (colMd12, containerFluid, row)
 
 type Input =
-  { configuration :: Array (Array Boolean)
+  { configuration :: Grid Boolean
+  , height :: Int
+  , width :: Int
+  , genCount :: Int
   }
 
 type State =
-  { configuration :: Array (Array Boolean)
+  { configuration :: Grid Boolean
+  , height :: Int
+  , width :: Int
+  , genCount :: Int
   }
 
 data Action
@@ -56,19 +62,18 @@ component = H.mkComponent
     handleAction = case _ of
       ReceiveNextInput input -> do
         H.put input
+        
       CellClicked i j -> do
         H.raise $ ToggleAlive i j
 
-    render { configuration } = 
-      let rowLength = length configuration
-          makeRow row =
-            let colLength = length <<< fromMaybe [] <<< flip (!!) row $ configuration
-            in HH.tr_ $ (0 .. (colLength - 1)) <#> \col ->
-                 let isAlive = fromMaybe false $ (configuration !! row) >>= flip (!!) col
-                 in  HH.td [ tdStyle
-                           , HE.onClick \_ -> Just $ CellClicked row col
-                           ]
-                       [ HH.text $ if isAlive then "λ" else "." ]
+    render { width, height, configuration, genCount } = 
+      let makeRow row =
+            HH.tr_ $ (0 .. (width - 1)) <#> \col ->
+               let isAlive = index configuration row col
+               in  HH.td [ tdStyle
+                         , HE.onClick \_ -> Just $ CellClicked row col
+                         ]
+                     [ HH.text $ if isAlive then "λ" else "." ]
     
       in
         HH.div [ HP.classes [ClassName "conway-game-board", containerFluid] ]
@@ -76,8 +81,14 @@ component = H.mkComponent
               [ HH.div [ HP.classes [colMd12] ]
                 [ HH.table [ tableStyle ]
                   [ HH.tbody [] $
-                    map makeRow (0 .. (rowLength - 1))
+                    map makeRow (0 .. (height - 1))
                   ]
+                ]
+              ]
+            , HH.div [ HP.classes [row] ]
+              [ HH.div [HP.classes [colMd12] ]
+                [ HH.span_ [ HH.text "現在：" ]
+                , HH.span_ [ HH.text $ "第 " <> show genCount <> " 世代" ]
                 ]
               ]
             ]

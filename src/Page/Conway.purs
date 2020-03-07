@@ -11,7 +11,7 @@ import CSS (marginBottom, marginTop, px)
 import Conway.Component.Board as GameBoard
 import Conway.Component.EditPanel as EditPanel
 import Conway.Data.Game as Game
-import Conway.Data.Grid (modifyAt, toArray2)
+import Conway.Data.Grid (modifyAt)
 import Data.Const (Const)
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
@@ -22,7 +22,7 @@ import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.CSS as CSS
 import Halogen.HTML.Properties as HP
-import Halogen.Themes.Bootstrap3 (colMd10, colMdOffset2, containerFluid, row, textCenter)
+import Halogen.Themes.Bootstrap3 (colMd10, colMdOffset4, containerFluid, row, textCenter)
 
 type Input = Unit
 type Query = Const Void
@@ -43,6 +43,7 @@ type State =
   , step :: Int
   , isRunning :: Boolean
   , configuration :: Game.Board
+  , genCount :: Int
   }
 
 component :: forall m. MonadEffect m => MonadAff m => H.Component HH.HTML Query Input Message m
@@ -61,12 +62,13 @@ component = H.mkComponent
       , isRunning: false
       , step: 500
       , configuration: Game.initialState
+      , genCount: 0
       }
     
-    render { height, width, step, isRunning, configuration } =
+    render { height, width, step, isRunning, configuration, genCount } =
         HH.div [ HP.class_ containerFluid ]
           [ HH.div [ HP.class_ row ]
-            [ HH.div [ HP.classes [colMd10, colMdOffset2, textCenter]]
+            [ HH.div [ HP.classes [colMd10, colMdOffset4, textCenter]]
               [ HH.div [ HP.class_ $ ClassName "conway-content" ]
                 [ HH.h1 [ HP.class_ $ ClassName "conway-title" ]
                   [ HH.text "🌵らいふげ〜む🌵"]
@@ -74,7 +76,7 @@ component = H.mkComponent
                   [ HH.div [ HP.class_ $ ClassName "conway-config-panel-area", panelStyle ]
                     [ HH.slot (SProxy :: _ "editPanel" ) unit EditPanel.component { width, height, step, isRunning } handleEditPanelMessage ]
                   , HH.div [ HP.class_ $ ClassName "conway-game-board-area", boardStyle ]
-                    [ HH.slot (SProxy :: _ "board" ) unit GameBoard.component { configuration: toArray2 width height configuration } handleGameBoardMessage ]
+                    [ HH.slot (SProxy :: _ "board" ) unit GameBoard.component { width, height, configuration, genCount } handleGameBoardMessage ]
                   ]
                 ]
               ]
@@ -82,11 +84,13 @@ component = H.mkComponent
           ]
 
     handleAction = case _ of
-      WidthChanged w -> do
+      WidthChanged w_ -> do
+        let w = min 50 <<< max 5 $ w_
         st <- H.get
         H.put $ st { width = w }
       
-      HeightChanged h -> do
+      HeightChanged h_ -> do
+        let h = min 35 <<< max 5 $ h_
         st <- H.get
         H.put $ st { height = h }
       
@@ -105,7 +109,7 @@ component = H.mkComponent
         st <- H.get
         let cu = st.configuration
         let nx = Game.next st.width st.height st.configuration
-        H.put $ st { configuration = nx }
+        H.put $ st { configuration = nx, genCount = st.genCount + 1 }
       
       AliveToggled i j -> do
         st <- H.get

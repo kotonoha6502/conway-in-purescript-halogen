@@ -9,6 +9,7 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Effect.Aff as Aff
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect)
+import Halogen (ClassName(..))
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.CSS as CSS
@@ -98,7 +99,7 @@ component = H.mkComponent
             ]
           , HH.div [ HP.classes [colMd2] ]
             [ HH.div [ HP.classes [row] ]
-              [ HH.div [ HP.classes [colMd6] ] [ HH.text "ステップ"]
+              [ HH.div [ HP.classes [colMd6] ] [ HH.text "ステップ\n/ms"]
               , HH.div [ HP.classes [colMd6] ]
                 [ HH.input [ HP.type_ HP.InputText , HP.classes [formControl], HP.value $ show step
                            , HP.disabled isRunning
@@ -115,11 +116,11 @@ component = H.mkComponent
                         , HE.onClick \_ -> Just ForwardRunButtonClicked 
                         ]
               [ HH.text (if isRunning then "すとっぷ" else "すた〜と") ]
-            , HH.button [ HP.classes [btn, btnPrimary], btnStyle
+            , HH.button [ HP.classes [btn, ClassName "btn-outline-primary"], btnStyle
                         , HE.onClick \_ -> Just ForwardResetButtonClicked
                         ]
               [ HH.text "りせっと" ]
-            , HH.button [ HP.classes [btn, btnPrimary], btnStyle
+            , HH.button [ HP.classes [btn, ClassName "btn-outline-primary"], btnStyle
                         , HE.onClick \_ -> Just AdvanceBtnClicked
                         ]
               [ HH.text "+1世代" ]
@@ -140,21 +141,18 @@ component = H.mkComponent
         let new = fromMaybe currentSt.width <<< fromString $ str
         when (new /= currentSt.width) do
           H.raise $ WidthChanged new
-          H.put $ currentSt { width = new }
 
       HandleWidthKeyDown e -> case code e of
         "ArrowUp" -> do
           H.liftEffect $ preventDefault (toEvent e)
           st <- H.get
           H.raise $ WidthChanged (st.width + 1)
-          H.put $ st { width = st.width + 1 }
 
         "ArrowDown" -> do
           H.liftEffect $ preventDefault (toEvent e)
           st <- H.get
           when (st.width > 1) do
             H.raise $ WidthChanged (st.width - 1)
-            H.put $ st { width = st.width - 1 }
 
         _ -> pure unit
 
@@ -163,44 +161,39 @@ component = H.mkComponent
         let new = fromMaybe currentSt.height <<< fromString $ str
         when (new /= currentSt.height) $
           H.raise $ HeightChanged new
-        H.put $ currentSt { height = new }
 
       HandleHeightKeyDown e -> case code e of
         "ArrowUp" -> do
           H.liftEffect $ preventDefault (toEvent e)
           st <- H.get
           H.raise $ HeightChanged (st.height + 1)
-          H.put $ st { height = st.height + 1 }
 
         "ArrowDown" -> do
           H.liftEffect $ preventDefault (toEvent e)
           st <- H.get
           when (st.height > 1) do
             H.raise $ HeightChanged (st.height - 1)
-            H.put $ st { height = st.height - 1 }
 
         _ -> pure unit
 
       HandleStepInput str -> do
         currentSt <- H.get
-        let new = fromMaybe currentSt.step <<< fromString $ str
+        let new =fromMaybe currentSt.step <<< fromString $ str
         when (new /= currentSt.step) $
           H.raise $ StepChanged new
-        H.put $ currentSt { step = new }
 
       HandleStepKeyDown e -> case code e of
         "ArrowUp" -> do
           H.liftEffect $ preventDefault (toEvent e)
           st <- H.get
           H.raise $ StepChanged (st.step + 100)
-          H.put $ st { step = st.step + 100 }
 
         "ArrowDown" -> do
           H.liftEffect $ preventDefault (toEvent e)
           st <- H.get
           when (st.step > 100) do
-            H.raise $ StepChanged (st.step - 1)
-            H.put $ st { step = st.step - 1 }
+            H.raise $ StepChanged (st.step - 100)
+            H.put $ st { step = st.step - 100 }
 
         _ -> pure unit
 

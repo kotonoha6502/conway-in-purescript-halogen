@@ -8,6 +8,7 @@ module Conway.Data.Grid
   , fromArray2
   , toArray2
   , modifyAt
+  , index
   ) where
 
 import Prelude
@@ -66,3 +67,6 @@ toArray2 i j (Grid g) = toArray j (toArray i <$> g)
 
 modifyAt :: forall a. Int -> Int -> (a -> a) -> Grid a -> Grid a
 modifyAt i j f (Grid g) = Grid $ Z.modifyAt i (Z.modifyAt j f) g
+
+index :: forall a. Grid a -> Int -> Int -> a
+index (Grid g) i j = Z.index (Z.index g i) j

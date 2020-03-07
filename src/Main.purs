@@ -2,8 +2,6 @@ module Main where
 
 import Prelude
 
-import Conway.AppM (runAppM)
-import Conway.Env (Env)
 import Conway.Page.Conway as Conway
 import Data.Const (Const)
 import Data.Symbol (SProxy(..))
@@ -36,13 +34,5 @@ app = H.mkComponent
 main :: Effect Unit
 main = HA.runHalogenAff do
   body <- HA.awaitBody
-  let
-    env :: Env
-    env = { delta: 1000
-          , pause: true }
-
-    rootComponent = H.hoist (runAppM env) app
-
-  halogenIO <- runUI rootComponent unit body
-
+  halogenIO <- runUI app unit body
   pure unit
