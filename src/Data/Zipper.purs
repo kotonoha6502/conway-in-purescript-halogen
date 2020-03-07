@@ -7,6 +7,7 @@ module Data.Zipper
   , fromFoldable
   , symmetric
   , toArray
+  , modifyAt
   ) where
 
 import Prelude
@@ -16,7 +17,6 @@ import Data.Array as A
 import Data.Foldable (class Foldable)
 import Data.Stream (Step(..), Stream, repeat, step, take, uncons)
 import Data.Stream as S
-
 import Data.Zipper.Types (Zipper(..), shiftl, shiftr)
 
 focus :: forall a. Zipper a -> a
@@ -44,3 +44,9 @@ symmetric a = Zipper (repeat a) a (repeat a)
 
 toArray :: Int -> Zipper ~> Array
 toArray n = A.fromFoldable <<< take n <<< right <<< shiftl
+
+modifyAt :: forall a. Int -> (a -> a) -> Zipper a -> Zipper a
+modifyAt 0 f (Zipper ls c rs) = Zipper ls (f c) rs
+modifyAt n f (Zipper ls c rs)
+ | n < 0      = Zipper (S.modifyAt ((-1) * n - 1) f ls) c rs
+ | otherwise  = Zipper ls c (S.modifyAt (n - 1) f rs)

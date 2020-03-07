@@ -7,6 +7,7 @@ module Conway.Data.Grid
   , focus
   , fromArray2
   , toArray2
+  , modifyAt
   ) where
 
 import Prelude
@@ -15,6 +16,7 @@ import Control.Comonad (class Comonad, class Extend, extract)
 import Data.Newtype (class Newtype, unwrap)
 import Data.Stream (fromFoldable, iterate, repeat, tail, uncons)
 import Data.Zipper (Zipper(..), fromStream, shiftl, shiftr, symmetric, toArray)
+import Data.Zipper as Z
 
 newtype Grid a = Grid (Zipper (Zipper a))
 
@@ -61,3 +63,6 @@ fromArray2 a xss =
 
 toArray2 :: forall a. Int -> Int -> Grid a -> Array (Array a)
 toArray2 i j (Grid g) = toArray j (toArray i <$> g)
+
+modifyAt :: forall a. Int -> Int -> (a -> a) -> Grid a -> Grid a
+modifyAt i j f (Grid g) = Grid $ Z.modifyAt i (Z.modifyAt j f) g

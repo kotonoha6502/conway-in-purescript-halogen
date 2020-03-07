@@ -11,10 +11,11 @@ import CSS (marginBottom, marginTop, px)
 import Conway.Component.Board as GameBoard
 import Conway.Component.EditPanel as EditPanel
 import Conway.Data.Game as Game
-import Conway.Data.Grid (toArray2)
+import Conway.Data.Grid (modifyAt, toArray2)
 import Data.Const (Const)
 import Data.Maybe (Maybe(..))
 import Data.Symbol (SProxy(..))
+import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect)
 import Halogen (ClassName(..))
 import Halogen as H
@@ -30,9 +31,11 @@ type Message = Void
 data Action
   = WidthChanged Int
   | HeightChanged Int
+  | StepChanged Int
   | RunStatusChanged
   | ResetFired
   | NextGeneration
+  | AliveToggled Int Int
 
 type State =
   { width :: Int
@@ -42,7 +45,7 @@ type State =
   , configuration :: Game.Board
   }
 
-component :: forall m. MonadEffect m => H.Component HH.HTML Query Input Message m
+component :: forall m. MonadEffect m => MonadAff m => H.Component HH.HTML Query Input Message m
 component = H.mkComponent
   { initialState
   , render
@@ -71,7 +74,7 @@ component = H.mkComponent
                   [ HH.div [ HP.class_ $ ClassName "conway-config-panel-area", panelStyle ]
                     [ HH.slot (SProxy :: _ "editPanel" ) unit EditPanel.component { width, height, step, isRunning } handleEditPanelMessage ]
                   , HH.div [ HP.class_ $ ClassName "conway-game-board-area", boardStyle ]
-                    [ HH.slot (SProxy :: _ "board" ) unit GameBoard.component { configuration: toArray2 width height configuration } absurd ]
+                    [ HH.slot (SProxy :: _ "board" ) unit GameBoard.component { configuration: toArray2 width height configuration } handleGameBoardMessage ]
                   ]
                 ]
               ]
@@ -86,6 +89,10 @@ component = H.mkComponent
       HeightChanged h -> do
         st <- H.get
         H.put $ st { height = h }
+      
+      StepChanged s -> do
+        st <- H.get
+        H.put $ st { step = s }
 
       RunStatusChanged -> do
         st <- H.get
@@ -99,6 +106,11 @@ component = H.mkComponent
         let cu = st.configuration
         let nx = Game.next st.width st.height st.configuration
         H.put $ st { configuration = nx }
+      
+      AliveToggled i j -> do
+        st <- H.get
+        let nx = modifyAt i j not st.configuration
+        H.put $ st { configuration = nx }
 
     handleEditPanelMessage :: EditPanel.Message → Maybe Action
     handleEditPanelMessage = case _ of
@@ -107,6 +119,11 @@ component = H.mkComponent
       EditPanel.RunButtonClicked -> Just RunStatusChanged
       EditPanel.ResetButtonClicked -> Just ResetFired
       EditPanel.Advanced -> Just NextGeneration
+      EditPanel.StepChanged s -> Just <<< StepChanged $ s 
+    
+    handleGameBoardMessage :: GameBoard.Message -> Maybe Action
+    handleGameBoardMessage = case _ of
+      GameBoard.ToggleAlive i j -> Just $ AliveToggled i j
 
     panelStyle = CSS.style do
       marginTop $ px 8.0

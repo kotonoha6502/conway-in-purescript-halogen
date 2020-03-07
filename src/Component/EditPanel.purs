@@ -4,8 +4,10 @@ import Prelude
 
 import CSS (marginRight, px)
 import Data.Const (Const)
-import Data.Int (fromString)
+import Data.Int (fromString, toNumber)
 import Data.Maybe (Maybe(..), fromMaybe)
+import Effect.Aff as Aff
+import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect)
 import Halogen as H
 import Halogen.HTML as HH
@@ -35,6 +37,8 @@ data Action
   | HandleWidthKeyDown KeyboardEvent
   | HandleHeightInput String
   | HandleHeightKeyDown KeyboardEvent
+  | HandleStepInput String
+  | HandleStepKeyDown KeyboardEvent
   | ForwardRunButtonClicked
   | ForwardResetButtonClicked
   | NextInputReceived Input
@@ -43,11 +47,12 @@ data Action
 data Message
   = WidthChanged Int
   | HeightChanged Int
+  | StepChanged Int
   | RunButtonClicked
   | ResetButtonClicked
   | Advanced
 
-component :: forall m. MonadEffect m => H.Component HH.HTML (Const Void) Input Message m
+component :: forall m. MonadEffect m => MonadAff m => H.Component HH.HTML (Const Void) Input Message m
 component = H.mkComponent
   { initialState
   , render
@@ -97,6 +102,8 @@ component = H.mkComponent
               , HH.div [ HP.classes [colMd6] ]
                 [ HH.input [ HP.type_ HP.InputText , HP.classes [formControl], HP.value $ show step
                            , HP.disabled isRunning
+                           , HE.onValueInput $ Just <<< HandleStepInput
+                           , HE.onKeyDown $ Just <<< HandleStepKeyDown
                            ]
                 ]
               ]
@@ -174,10 +181,47 @@ component = H.mkComponent
 
         _ -> pure unit
 
+      HandleStepInput str -> do
+        currentSt <- H.get
+        let new = fromMaybe currentSt.step <<< fromString $ str
+        when (new /= currentSt.step) $
+          H.raise $ StepChanged new
+        H.put $ currentSt { step = new }
+
+      HandleStepKeyDown e -> case code e of
+        "ArrowUp" -> do
+          H.liftEffect $ preventDefault (toEvent e)
+          st <- H.get
+          H.raise $ StepChanged (st.step + 100)
+          H.put $ st { step = st.step + 100 }
+
+        "ArrowDown" -> do
+          H.liftEffect $ preventDefault (toEvent e)
+          st <- H.get
+          when (st.step > 100) do
+            H.raise $ StepChanged (st.step - 1)
+            H.put $ st { step = st.step - 1 }
+
+        _ -> pure unit
+
       ForwardRunButtonClicked -> do
         st <- H.get
-        H.put $ st { isRunning = not st.isRunning }
+        let shouldAdvanceAuto = not st.isRunning
+        H.put $ st { isRunning = shouldAdvanceAuto }
         H.raise $ RunButtonClicked
+
+        let autoAdvance = do
+              { step } <- H.get
+              H.liftAff $ Aff.delay $ Aff.Milliseconds (toNumber step)
+              { isRunning } <- H.get
+              if isRunning
+              then do
+                H.raise $ Advanced
+                autoAdvance
+              else pure unit
+
+        when shouldAdvanceAuto autoAdvance
+          
       
       AdvanceBtnClicked -> do
         H.raise Advanced

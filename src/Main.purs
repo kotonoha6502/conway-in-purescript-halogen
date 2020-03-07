@@ -8,6 +8,7 @@ import Conway.Page.Conway as Conway
 import Data.Const (Const)
 import Data.Symbol (SProxy(..))
 import Effect (Effect)
+import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect)
 import Halogen as H
 import Halogen.Aff as HA
@@ -21,7 +22,7 @@ type AppInput = Unit
 type AppMessage = Void
 type AppAction = Unit
 
-app :: forall m. MonadEffect m => H.Component HH.HTML AppQuery AppInput AppMessage m
+app :: forall m. MonadEffect m => MonadAff m => H.Component HH.HTML AppQuery AppInput AppMessage m
 app = H.mkComponent
   { initialState: const unit
   , render

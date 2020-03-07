@@ -2,6 +2,7 @@ module Conway.Component.Board
   ( Input
   , State
   , component
+  , Message(..)
   ) where
 
 import Prelude
@@ -12,11 +13,13 @@ import CSS.VerticalAlign (verticalAlign)
 import Data.Array (length, (!!), (..))
 import Data.Const (Const)
 import Data.Maybe (Maybe(..), fromMaybe)
-import Effect.Class (class MonadEffect)
+import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Console (log)
 import Halogen as H
 import Halogen.HTML (ClassName(..))
 import Halogen.HTML as HH
 import Halogen.HTML.CSS as CSS
+import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.Themes.Bootstrap3 (colMd12, containerFluid, row)
 
@@ -30,8 +33,12 @@ type State =
 
 data Action
   = ReceiveNextInput Input
+  | CellClicked Int Int
 
-component :: forall m. MonadEffect m => H.Component HH.HTML (Const Void) Input Void m
+data Message
+  = ToggleAlive Int Int
+
+component :: forall m. MonadEffect m => H.Component HH.HTML (Const Void) Input Message m
 component = H.mkComponent
   { initialState
   , render
@@ -49,6 +56,8 @@ component = H.mkComponent
     handleAction = case _ of
       ReceiveNextInput input -> do
         H.put input
+      CellClicked i j -> do
+        H.raise $ ToggleAlive i j
 
     render { configuration } = 
       let rowLength = length configuration
@@ -56,8 +65,10 @@ component = H.mkComponent
             let colLength = length <<< fromMaybe [] <<< flip (!!) row $ configuration
             in HH.tr_ $ (0 .. (colLength - 1)) <#> \col ->
                  let isAlive = fromMaybe false $ (configuration !! row) >>= flip (!!) col
-                 in  HH.td [ tdStyle ]
-                       [ HH.text $ if isAlive then "X" else "." ]
+                 in  HH.td [ tdStyle
+                           , HE.onClick \_ -> Just $ CellClicked row col
+                           ]
+                       [ HH.text $ if isAlive then "λ" else "." ]
     
       in
         HH.div [ HP.classes [ClassName "conway-game-board", containerFluid] ]
@@ -81,4 +92,3 @@ component = H.mkComponent
       color $ rgb 192 192 192
       fontSize $ px 11.0
       verticalAlign middle
-    
