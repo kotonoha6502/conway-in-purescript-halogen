@@ -1,5 +1,8 @@
 module Conway.Data.Game
   ( initialState
+  , aliveLegend
+  , defaultLegend
+  , defaultLegendId
   , Board
   , rule
   , next
@@ -10,6 +13,7 @@ import Prelude
 import Control.Extend (extend)
 import Conway.Data.Grid (Grid, down, focus, fromArray2, left, right, toArray2, up)
 import Data.Array (filter, length)
+import Data.Tuple (Tuple(..))
 
 initialState :: Grid Boolean
 initialState = fromArray2 false $
@@ -28,6 +32,31 @@ initialState = fromArray2 false $
     , [ false, false, false, false, false, false, false, false, false, true,  false, false, false, false, false, false ]
     , [ false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false ]
     ]
+
+aliveLegend :: Array (Tuple String String)
+aliveLegend =
+  [ Tuple defaultLegendId defaultLegend
+  , Tuple "spago" "🍝"
+  , Tuple "ramen" "🍜"
+  , Tuple "sushi" "🍣"
+  , Tuple "beer" "🍺"
+  , Tuple "kani" "🦀"
+  , Tuple "saboten" "🌵"
+  , Tuple "frame" "🔥"
+  , Tuple "smile" "😃"
+  , Tuple "pien" "🥺"
+  , Tuple "minesweeper"  "😎"
+  , Tuple "hustle" "😤"
+  , Tuple "yoshiko" "👿"
+  , Tuple "ghost" "👻"
+  , Tuple "alien" "👾"
+  ]
+
+defaultLegendId :: String
+defaultLegendId = "lambda"
+
+defaultLegend :: String
+defaultLegend = "λ"
 
 type Board = Grid Boolean
 

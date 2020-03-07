@@ -10,6 +10,7 @@ import Prelude
 import CSS (marginBottom, marginTop, px)
 import Conway.Component.Board as GameBoard
 import Conway.Component.EditPanel as EditPanel
+import Conway.Data.Game (defaultLegendId)
 import Conway.Data.Game as Game
 import Conway.Data.Grid (modifyAt)
 import Data.Const (Const)
@@ -22,7 +23,7 @@ import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.CSS as CSS
 import Halogen.HTML.Properties as HP
-import Halogen.Themes.Bootstrap3 (colMd10, colMdOffset4, containerFluid, row, textCenter)
+import Halogen.Themes.Bootstrap3 (colMd10, containerFluid, row, textCenter)
 
 type Input = Unit
 type Query = Const Void
@@ -32,6 +33,7 @@ data Action
   = WidthChanged Int
   | HeightChanged Int
   | StepChanged Int
+  | LegendChanged String
   | RunStatusChanged
   | ResetFired
   | NextGeneration
@@ -41,6 +43,7 @@ type State =
   { width :: Int
   , height :: Int
   , step :: Int
+  , legend :: String
   , isRunning :: Boolean
   , configuration :: Game.Board
   , genCount :: Int
@@ -63,20 +66,21 @@ component = H.mkComponent
       , step: 500
       , configuration: Game.initialState
       , genCount: 0
+      , legend: defaultLegendId
       }
     
-    render { height, width, step, isRunning, configuration, genCount } =
+    render { height, width, step, isRunning, configuration, genCount, legend } =
         HH.div [ HP.class_ containerFluid ]
           [ HH.div [ HP.class_ row ]
-            [ HH.div [ HP.classes [colMd10, colMdOffset4, textCenter]]
+            [ HH.div [ HP.classes [colMd10, ClassName "offset-md-1", textCenter]]
               [ HH.div [ HP.class_ $ ClassName "conway-content" ]
                 [ HH.h1 [ HP.class_ $ ClassName "conway-title" ]
                   [ HH.text "🌵らいふげ〜む🌵"]
                 , HH.div [ HP.class_ $ ClassName "conway-content-body" ]
                   [ HH.div [ HP.class_ $ ClassName "conway-config-panel-area", panelStyle ]
-                    [ HH.slot (SProxy :: _ "editPanel" ) unit EditPanel.component { width, height, step, isRunning } handleEditPanelMessage ]
+                    [ HH.slot (SProxy :: _ "editPanel" ) unit EditPanel.component { width, height, step, isRunning, legend } handleEditPanelMessage ]
                   , HH.div [ HP.class_ $ ClassName "conway-game-board-area", boardStyle ]
-                    [ HH.slot (SProxy :: _ "board" ) unit GameBoard.component { width, height, configuration, genCount } handleGameBoardMessage ]
+                    [ HH.slot (SProxy :: _ "board" ) unit GameBoard.component { width, height, configuration, genCount, legend } handleGameBoardMessage ]
                   ]
                 ]
               ]
@@ -97,6 +101,10 @@ component = H.mkComponent
       StepChanged s -> do
         st <- H.get
         H.put $ st { step = s }
+
+      LegendChanged id -> do
+        st <- H.get
+        H.put $ st { legend = id }
 
       RunStatusChanged -> do
         st <- H.get
@@ -124,6 +132,7 @@ component = H.mkComponent
       EditPanel.ResetButtonClicked -> Just ResetFired
       EditPanel.Advanced -> Just NextGeneration
       EditPanel.StepChanged s -> Just <<< StepChanged $ s 
+      EditPanel.LegendChanged id -> Just <<< LegendChanged $ id
     
     handleGameBoardMessage :: GameBoard.Message -> Maybe Action
     handleGameBoardMessage = case _ of

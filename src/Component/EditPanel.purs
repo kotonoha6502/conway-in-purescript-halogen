@@ -2,10 +2,12 @@ module Conway.Component.EditPanel where
 
 import Prelude
 
-import CSS (marginRight, px)
+import CSS (display, inlineBlock, marginRight, px)
+import Conway.Data.Game (aliveLegend)
 import Data.Const (Const)
 import Data.Int (fromString, toNumber)
 import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Tuple (Tuple(..))
 import Effect.Aff as Aff
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect)
@@ -15,7 +17,7 @@ import Halogen.HTML as HH
 import Halogen.HTML.CSS as CSS
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import Halogen.Themes.Bootstrap3 (btn, btnPrimary, colMd2, colMd4, colMd5, colMd6, colMd8, containerFluid, formControl, formGroup, row, textLeft)
+import Halogen.Themes.Bootstrap3 (btn, btnPrimary, colMd1, colMd12, colMd3, colMd4, colMd5, colMd6, formControl, formGroup, row, textLeft)
 import Web.Event.Event (preventDefault)
 import Web.UIEvent.KeyboardEvent (KeyboardEvent, code, toEvent)
 
@@ -23,6 +25,7 @@ type Input =
   { width :: Int
   , height :: Int
   , isRunning :: Boolean
+  , legend :: String
   , step :: Int
   }
 
@@ -31,6 +34,7 @@ type State =
   , height :: Int
   , isRunning :: Boolean
   , step :: Int
+  , legend :: String
   }
 
 data Action
@@ -40,6 +44,7 @@ data Action
   | HandleHeightKeyDown KeyboardEvent
   | HandleStepInput String
   | HandleStepKeyDown KeyboardEvent
+  | HandleLegendSelect String
   | ForwardRunButtonClicked
   | ForwardResetButtonClicked
   | NextInputReceived Input
@@ -49,6 +54,7 @@ data Message
   = WidthChanged Int
   | HeightChanged Int
   | StepChanged Int
+  | LegendChanged String
   | RunButtonClicked
   | ResetButtonClicked
   | Advanced
@@ -70,25 +76,21 @@ component = H.mkComponent
     receive input = Just $ NextInputReceived input
 
     render :: State -> H.ComponentHTML Action () m
-    render { height, width, isRunning, step } =
-      HH.div [ HP.classes $ [ containerFluid ] ]
+    render { height, width, isRunning, step, legend } =
+      HH.div [ editPanelStyle ]
         [ HH.div [ HP.classes [row, formGroup] ]
-          [ HH.div [ HP.classes [colMd2] ]
+          [ HH.div [ HP.classes [colMd5] ]
             [ HH.div [ HP.classes [row] ]
-              [ HH.div [ HP.classes [colMd4] ] [ HH.text "幅"]
-              , HH.div [ HP.classes [colMd8] ]
+              [ HH.div [ HP.classes [colMd4] ] [ HH.text "サイズ"]
+              , HH.div [ HP.classes [colMd3] ]
                 [ HH.input [ HP.type_ HP.InputText , HP.classes [formControl], HP.value $ show width
                            , HP.disabled isRunning
                            , HE.onValueInput $ Just <<< HandleWidthInput
                            , HE.onKeyDown $ Just <<< HandleWidthKeyDown
                            ]
                 ]
-              ]
-            ]
-          , HH.div [ HP.classes [colMd2] ]
-            [ HH.div [ HP.classes [row] ]
-              [ HH.div [ HP.classes [colMd4] ] [ HH.text "高さ"]
-              , HH.div [ HP.classes [colMd8] ]
+              , HH.div [ HP.classes [colMd1] ] [ HH.text "✕" ]
+              , HH.div [ HP.classes [colMd3] ]
                 [ HH.input [ HP.type_ HP.InputText , HP.classes [formControl], HP.value $ show height
                            , HP.disabled isRunning
                            , HE.onValueInput $ Just <<< HandleHeightInput
@@ -97,7 +99,7 @@ component = H.mkComponent
                 ]
               ]
             ]
-          , HH.div [ HP.classes [colMd2] ]
+          , HH.div [ HP.classes [colMd3] ]
             [ HH.div [ HP.classes [row] ]
               [ HH.div [ HP.classes [colMd6] ] [ HH.text "ステップ\n/ms"]
               , HH.div [ HP.classes [colMd6] ]
@@ -109,9 +111,21 @@ component = H.mkComponent
                 ]
               ]
             ]
+          , HH.div [ HP.classes [colMd3] ]
+            [ HH.div [ HP.classes [row] ]
+              [ HH.div [ HP.classes [colMd6] ] [ HH.text "凡例" ]
+              , HH.div [ HP.classes [colMd6] ]
+                [ HH.select [ HP.classes [formControl] 
+                            , HE.onValueChange $ Just <<< HandleLegendSelect 
+                            ] $
+                  aliveLegend <#> \(Tuple id leg) ->
+                    HH.option [ HP.value id, HP.selected (id == legend) ] [ HH.text leg ]
+                ]
+              ]
+            ]
           ]
         , HH.div [ HP.classes [row] ]
-          [ HH.div [ HP.classes [colMd5, textLeft] ]
+          [ HH.div [ HP.classes [colMd12, textLeft] ]
             [ HH.button [ HP.classes [btn, btnPrimary], btnStyle 
                         , HE.onClick \_ -> Just ForwardRunButtonClicked 
                         ]
@@ -214,10 +228,15 @@ component = H.mkComponent
               else pure unit
 
         when shouldAdvanceAuto autoAdvance
-          
+
+      HandleLegendSelect id -> do
+        H.raise $ LegendChanged id    
       
       AdvanceBtnClicked -> do
         H.raise Advanced
+
+    editPanelStyle = CSS.style do
+      display inlineBlock
     
     btnStyle = CSS.style do
-      marginRight $ px 16.0
+      marginRight $ px 32.0
